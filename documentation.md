@@ -12,16 +12,16 @@ valid as the code evolves.
 ## Project Metadata
 
 - Project title: AI Book Librarian – Personalized Book Recommendation with Rating Prediction and Natural Language Explanations
-- Student: Max
+- Student: Laura Stärk
 - GitHub repository URL: <fill>
-- Deployment URL: <fill — Hugging Face Space>
-- Submission date: 2026-06-07
+- Deployment URL: <(https://huggingface.co/spaces/lst0004/AI_Book_Librarian) — Hugging Face Space>
+- Submission date: <fill> 2026-06-07
 
 ### Mandatory Setup Checks
 
 - [x] At least 2 blocks selected
 - [x] Multiple and different data sources used
-- [ ] Deployment URL provided
+- [x] Deployment URL provided
 - [ ] Required GitHub users added to repository (`jasminh`, `bkuehnis`)
 
 ## Selected AI Blocks
@@ -71,8 +71,8 @@ user query ─embedding search─▶ candidates ─▶ ranking(sem, rating, pop)
 
 | Entry | Source name or link | Type | Size | Role in this block |
 | --- | --- | --- | --- | --- |
-| 1 | Book_Details.csv (Kaggle: dk123891/books-dataset-goodreadsmay-2024) | Structured CSV | ~16k books | Metadata features + target (`average_rating`) |
-| 2 | book_reviews.db (same Kaggle collection) | SQLite review text | ~63k reviews | Source of the NLP-derived `sentiment_compound` feature (joined on `book_id`) |
+| 1 | Book_Details.csv (Kaggle: https://www.kaggle.com/datasets/dk123891/books-dataset-goodreadsmay-2024?select=Book_Details.csv) | Structured CSV | ~16k books | Metadata features + target (`average_rating`) |
+| 2 | book_reviews.db (same Kaggle collection: https://www.kaggle.com/datasets/dk123891/books-dataset-goodreadsmay-2024?select=book_reviews.db) | SQLite review text | ~63k reviews | Source of the NLP-derived `sentiment_compound` feature (joined on `book_id`) |
 
 #### 2A.2 Preprocessing and Features
 
@@ -98,8 +98,17 @@ user query ─embedding search─▶ candidates ─▶ ranking(sem, rating, pop)
 #### 2A.5 Evaluation and Error Analysis
 
 - Metrics used: RMSE, MAE, R² on a 20% hold-out + 5-fold CV (`src/train.py`).
-- Final results: _[fill from model_comparison.csv]_; mean-rating baseline RMSE _[fill]_.
-- Error patterns and likely causes: largest residuals in `reports/worst_predictions.csv`. Expected drivers: niche books with very few ratings (noisy target), and the narrow target distribution capping achievable R². Feature importance in `reports/feature_importance.csv`.
+- Final results: 
+  Model	RMSE	MAE	R²	CV RMSE
+  Ridge Regression	0.226	0.176	0.234	0.226
+  Random Forest	0.223	0.170	0.252	0.223
+  Gradient Boosting	0.220	0.170	0.273	0.222
+  XGBoost	0.222	0.170	0.261	0.220
+
+  Gradient Boosting achieved the best overall performance with the lowest hold-out RMSE (0.220) and the highest R² (0.273). Therefore, it was selected as the final production model and saved as rating_model.joblib.
+
+- Error patterns and likely causes: largest residuals can be inspected in reports/worst_predictions.csv. The largest prediction errors occur mainly for niche books with few ratings and for books whose popularity or reception is not fully captured by the available metadata. The relatively narrow Goodreads rating distribution also limits the achievable R².
+
 
 #### 2A.6 Integration with Other Block(s)
 
@@ -137,8 +146,20 @@ user query ─embedding search─▶ candidates ─▶ ranking(sem, rating, pop)
 #### 2B.5 Evaluation and Error Analysis
 
 - Evaluation strategy: qualitative side-by-side of TF-IDF vs. embedding retrieval on a fixed set of test queries; qualitative review of both prompt variants for groundedness (does it invent facts?) and honesty (does it flag loose matches?).
-- Results: _[fill — note which retrieval gave more on-theme results and which prompt you shipped]_.
-- Error patterns and likely causes: embeddings can over-weight popular titles; sparse descriptions reduce retrieval quality (coverage from Google Books is partial).
+- Results:
+Dense retrieval using all-MiniLM-L6-v2 produced more semantically relevant recommendations than TF-IDF, especially for abstract queries describing moods, themes, or reading preferences rather than exact keywords.
+
+The final system therefore uses dense embedding retrieval as the default recommendation method.
+
+For explanations, the structured prompt variant was selected because it produced clearer and more informative recommendations while remaining grounded in the retrieved book metadata and predicted ratings.
+
+As a validation of the sentiment feature, VADER sentiment scores were compared against user star ratings on 61,233 reviews:
+
+Pearson correlation: r = 0.178
+Number of reviews: 61,233
+
+Although the correlation is moderate, it confirms that review sentiment contains useful information and can contribute predictive value to the rating model.
+- Error patterns and likely causes: embedding retrieval can occasionally favor highly popular books because they have richer descriptions and metadata. Retrieval quality also depends on description coverage; books with short or missing descriptions provide weaker semantic signals.
 
 #### 2B.6 Integration with Other Block(s)
 
@@ -185,6 +206,10 @@ N/A — not selected.
 - [ ] Ethics, bias, or fairness analysis
 - [ ] Creative or exceptional use case
 
-Evidence for selected bonus items: two independent comparisons beyond the minimum (retrieval method
-and explanation prompt) plus a quantitative validation of the sentiment feature against star ratings.
-(Optional CV third block is feasible — `Book_Details.csv` has a `cover_image_uri` column.)
+Evidence for selected bonus items:
+
+- Retrieval comparison: TF-IDF versus dense transformer embeddings (`all-MiniLM-L6-v2`).
+- Explanation comparison: concise versus structured prompt variants.
+- Quantitative sentiment validation: VADER sentiment scores compared against 61,233 Goodreads review ratings, yielding a Pearson correlation of r = 0.178.
+- Multiple evaluation perspectives combining quantitative metrics (RMSE, MAE, R², correlation analysis) and qualitative assessment (retrieval relevance and explanation quality).
+
