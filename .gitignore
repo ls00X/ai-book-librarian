@@ -1,0 +1,26 @@
+# Raw data and large intermediates (do NOT commit)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/training_table.parquet
+data/processed/descriptions_cache.json
+data/processed/sentiment_by_title.parquet
+
+# Python
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+.ipynb_checkpoints/
+.DS_Store
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# IMPORTANT - commit these so the deployed app works:
+#   data/processed/catalog.parquet
+#   models/rating_model.joblib
+#   models/book_embeddings.npy
+#   models/book_embedding_ids.npy
+#   models/tfidf_vectorizer.joblib
+#   models/tfidf_matrix.joblib
