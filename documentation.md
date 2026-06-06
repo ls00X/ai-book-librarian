@@ -1,9 +1,5 @@
 # AI Applications Project Documentation Template
 
-> Code references use the form `path` + function/section. Replace `<user>/<repo>` in links with
-> your GitHub path, e.g. `https://github.com/<user>/<repo>/blob/main/src/train.py#L95-L120`.
-> Values marked _[fill after training]_ come from `reports/model_comparison.csv` after you run the pipeline.
-
 ## Documentation Hint
 
 References point to the function or section in the code rather than a fixed line, so they stay
@@ -13,16 +9,16 @@ valid as the code evolves.
 
 - Project title: AI Book Librarian – Personalized Book Recommendation with Rating Prediction and Natural Language Explanations
 - Student: Laura Stärk
-- GitHub repository URL: <fill>
+- GitHub repository URL: https://github.com/ls00X/ai-book-librarian
 - Deployment URL: https://huggingface.co/spaces/lst0004/AI_Book_Librarian
-- Submission date: <fill> 2026-06-07
+- Submission date: 06.06.2026
 
 ### Mandatory Setup Checks
 
 - [x] At least 2 blocks selected
 - [x] Multiple and different data sources used
 - [x] Deployment URL provided
-- [ ] Required GitHub users added to repository (`jasminh`, `bkuehnis`)
+- [x] Required GitHub users added to repository (`jasminh`, `bkuehnis`)
 
 ## Selected AI Blocks
 
@@ -78,12 +74,12 @@ user query ──embedding search──▶ candidates ──▶ ranking(semantic
 #### 2A.2 Preprocessing and Features
 
 - Cleaning steps: strip stray header spaces; parse num_pages from its list-string form (e.g. ['652']); extract publication_year from the publication_info string (e.g. ['First published July 16, 2005']); coerce numeric columns; drop rows without a title or average_rating; de-duplicate on the canonical book_id (derived from the native book_id):[`load_books()` in `src/data_prep.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/data_prep.py#L81-L107).
-- Preprocessing steps: median-impute + standardize the numeric features; log1p on the highly skewed ratings_count / text_reviews_count; genre one-hots passed through unchanged. (This dataset has no language column, so no categorical encoder is applied.) [`build_preprocessor()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py#L55-L68) / [`load_xy()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py#L38-L52) in `src/train.py`.
+- Preprocessing steps: median-impute + standardize the numeric features; log1p on the highly skewed ratings_count / text_reviews_count; genre one-hots passed through unchanged. (This dataset has no language column, so no categorical encoder is applied.) [`build_preprocessor()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py#L55-L68) / [`load_xy()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py#L38-L52) in `src/train.py` (https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py).
 - Feature engineering and selection: 20 features = 5 numeric (num_pages, log ratings_count, log text_reviews_count, publication_year, sentiment_compound) + 15 genre one-hots. sentiment_compound is the NLP-derived feature; rating_distribution is deliberately excluded because it is the star breakdown that defines average_rating (target leakage).
-- Exploratory data analysis (key findings) — from [`notebooks/eda.ipynb`] (https://github.com/ls00X/ai-book-librarian/blob/main/notebooks/eda.ipynb):
+- Exploratory data analysis (key findings) — from [`notebooks/eda.ipynb`](https://github.com/ls00X/ai-book-librarian/blob/main/notebooks/eda.ipynb):
   - The target average_rating is narrow: mean 3.99, std 0.26, range 2.40–4.81, concentrated around 4.0. A mean-only baseline therefore already achieves RMSE = 0.26, the bar any model must beat.
   - ratings_count and text_reviews_count are extremely right-skewed → log-transformed (roughly normal after log1p).
-  - Correlations with average_rating are modest: num_pages 0.24 (strongest), log ratings_count 0.15, sentiment_compound 0.13 text_reviews_count 0.06, publication_year 0.05. ratings_count and text_reviews_count are nearly collinear (r = 0.94).
+  - Correlations with average_rating are modest: num_pages 0.24 (strongest), log ratings_count 0.15, sentiment_compound 0.13, text_reviews_count 0.06, publication_year 0.05. ratings_count and text_reviews_count are nearly collinear (r = 0.94).
   - Sentiment coverage is partial: 3,589 / 4,000 books (90%) have at least one matched review; the rest are median-imputed.
   - Genre distribution is dominated by Fiction (3,224), Classics (1,418) and Fantasy (1,169).
 
@@ -143,7 +139,7 @@ and limited, consistent with the weak per-book sentiment–rating correlation (r
 #### 2B.2 Preprocessing and Prompt Design
 
 - Text preprocessing: build a per-book document title + genres + description ([`_doc()` in `src/embeddings.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/embeddings.py#L19-L21)); review text truncated to 1000 chars before VADER ([`src/sentiment.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/sentiment.py#L42-L45)). The review→book sentiment join is on book_id (not on title), since reviews and metadata share the dataset's native id.
-- Prompt design or retrieval setup: dense embeddings with `all-MiniLM-L6-v2`, cosine similarity, top-`CANDIDATE_POOL` then re-rank. Two LLM prompt variants (`concise` (https://github.com/ls00X/ai-book-librarian/blob/main/src/explain.py#L15-L20), `structured` (https://github.com/ls00X/ai-book-librarian/blob/main/src/explain.py#L21-L28)) grounded in retrieved book data — [`PROMPT_VARIANTS` in `src/explain.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/explain.py#L14-L30).
+- Prompt design or retrieval setup: dense embeddings with `all-MiniLM-L6-v2`, cosine similarity, top-`CANDIDATE_POOL` then re-rank. Two LLM prompt variants ([`concise`](https://github.com/ls00X/ai-book-librarian/blob/main/src/explain.py#L15-L20), [`structured`](https://github.com/ls00X/ai-book-librarian/blob/main/src/explain.py#L21-L28)) grounded in retrieved book data — [`PROMPT_VARIANTS` in `src/explain.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/explain.py#L14-L30).
 
 #### 2B.3 Approach Selection
 
@@ -201,17 +197,17 @@ N/A — not selected.
   ![](reports/figures/embedding_structured2.png)
 
 
-  TFI-DF retrieval for "An epic fantasy with political intrigue, very long, similar to throne of glass." — ranked results with actual vs. predicted rating and match score. Explanation style: concise
+  TF-IDF retrieval for "An epic fantasy with political intrigue, very long, similar to throne of glass." — ranked results with actual vs. predicted rating and match score. Explanation style: concise
   ![](reports/figures/tfidf_concise1.png)
   ![](reports/figures/tfidf_concise2.png)
 
  
-  TFI-DF retrieval for "An epic fantasy with political intrigue, very long, similar to throne of glass." — ranked results with actual vs. predicted rating and match score. Explanation style: structured
+  TF-IDF retrieval for "An epic fantasy with political intrigue, very long, similar to throne of glass." — ranked results with actual vs. predicted rating and match score. Explanation style: structured
   ![](reports/figures/tfidf_structured1.png)
   ![](reports/figures/tfidf_structured2.png)
 
 
-  TFI-DF retrieval for "An epic fantasy with political intrigue, very long, similar to throne of glass." — ranked results with actual vs. predicted rating and match score. Explanation style: concise
+  TF-IDF retrieval for "An epic fantasy with political intrigue, very long, similar to throne of glass." — ranked results with actual vs. predicted rating and match score. Explanation style: concise
   But with different ranking weight for popularity:
 
   High popularity:
@@ -226,7 +222,7 @@ N/A — not selected.
 ## 4. Execution Instructions
 
 - Environment setup: `python -m venv .venv && pip install -r requirements.txt`; set `OPENAI_API_KEY`.
-- Data setup: place `Book_Details.csv` and `book_reviews.db.` in `data/raw/` (links in README §2).
+- Data setup: place `Book_Details.csv` and `book_reviews.db` in `data/raw/`.
 - Training command(s):
   ```bash
   python check_review_join.py
@@ -236,7 +232,7 @@ N/A — not selected.
   python -m src.embeddings
   ```
 - Inference/run command(s): `streamlit run app.py`
-- Reproducibility notes: fixed `RANDOM_STATE=42`; all parameters centralized in `src/config.py`; training and inference are fully separated (the app only loads saved artifacts).
+- Reproducibility notes: fixed `RANDOM_STATE=42`; all parameters centralized in [`src/config.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/config.py); training and inference are fully separated (the app only loads saved artifacts).
 
 ---
 
