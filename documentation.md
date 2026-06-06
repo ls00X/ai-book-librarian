@@ -50,8 +50,8 @@ If a third block is selected, it is documented and graded separately as extra wo
 ### 1.2 Integration Logic
 
 - How the selected blocks interact: 
-  - NLP → ML: review sentiment (VADER) is aggregated per book and used as a **feature** in the rating model — see [`data_prep.py` — `attach_sentiment()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/data_prep.py#L126-135) and the `NUMERIC` feature list in [`train.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py#L34).
-  - ML → NLP: the trained model's **predicted_rating** is written into the catalog ([`train.py` — `main()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py#L71-L143)), then used as a ranking term ([`recommend.py` — `Recommender.recommend()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/recommend.py#L42-L65)) and as grounding in the LLM prompt ([`explain.py` — `_books_block()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/explain.py#L33-L46)).
+  - NLP → ML: review sentiment (VADER) is aggregated per book and used as a **feature** in the rating model — see [`data_prep.py` `attach_sentiment()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/data_prep.py#L126-135) and the `NUMERIC` feature list in [`train.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py#L34).
+  - ML → NLP: the trained model's **predicted_rating** is written into the catalog ([`train.py` `main()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py#L71-L143)), then used as a ranking term ([`recommend.py` `Recommender.recommend()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/recommend.py#L42-L65)) and as grounding in the LLM prompt ([`explain.py` `_books_block()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/explain.py#L33-L46)).
 - Data and output flow between blocks:
 
 ```
@@ -77,10 +77,10 @@ user query ──embedding search──▶ candidates ──▶ ranking(semantic
 
 #### 2A.2 Preprocessing and Features
 
-- Cleaning steps: strip stray header spaces; parse num_pages from its list-string form (e.g. ['652']); extract publication_year from the publication_info string (e.g. ['First published July 16, 2005']); coerce numeric columns; drop rows without a title or average_rating; de-duplicate on the canonical book_id (derived from the native book_id) — load_books() in src/data_prep.py.
-- Preprocessing steps: median-impute + standardize the numeric features; log1p on the highly skewed ratings_count / text_reviews_count; genre one-hots passed through unchanged. (This dataset has no language column, so no categorical encoder is applied.) — build_preprocessor() / load_xy() in src/train.py.
+- Cleaning steps: strip stray header spaces; parse num_pages from its list-string form (e.g. ['652']); extract publication_year from the publication_info string (e.g. ['First published July 16, 2005']); coerce numeric columns; drop rows without a title or average_rating; de-duplicate on the canonical book_id (derived from the native book_id):[`load_books()` in `src/data_prep.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/data_prep.py#L81-L107).
+- Preprocessing steps: median-impute + standardize the numeric features; log1p on the highly skewed ratings_count / text_reviews_count; genre one-hots passed through unchanged. (This dataset has no language column, so no categorical encoder is applied.) [`build_preprocessor()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py#L55-L68) / [`load_xy()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py#L38-L52) in `src/train.py`.
 - Feature engineering and selection: 20 features = 5 numeric (num_pages, log ratings_count, log text_reviews_count, publication_year, sentiment_compound) + 15 genre one-hots. sentiment_compound is the NLP-derived feature; rating_distribution is deliberately excluded because it is the star breakdown that defines average_rating (target leakage).
-- Exploratory data analysis (key findings) — from notebooks/eda.ipynb:
+- Exploratory data analysis (key findings) — from [`notebooks/eda.ipynb`] (https://github.com/ls00X/ai-book-librarian/blob/main/notebooks/eda.ipynb):
   - The target average_rating is narrow: mean 3.99, std 0.26, range 2.40–4.81, concentrated around 4.0. A mean-only baseline therefore already achieves RMSE = 0.26, the bar any model must beat.
   - ratings_count and text_reviews_count are extremely right-skewed → log-transformed (roughly normal after log1p).
   - Correlations with average_rating are modest: num_pages 0.24 (strongest), log ratings_count 0.15, sentiment_compound 0.13 text_reviews_count 0.06, publication_year 0.05. ratings_count and text_reviews_count are nearly collinear (r = 0.94).
@@ -111,7 +111,7 @@ and limited, consistent with the weak per-book sentiment–rating correlation (r
 
 #### 2A.5 Evaluation and Error Analysis
 
-- Metrics used: RMSE, MAE, R² on a 20% hold-out + 5-fold CV (`src/train.py`).
+- Metrics used: RMSE, MAE, R² on a 20% hold-out + 5-fold CV [`src/train.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py).
 - Final results: 
   Baseline for comparison: predicting the global mean rating for every book yields RMSE = 0.26 (R² = 0). All trained models beat this baseline, and the positive R² confirms the model explains variance the mean cannot. Gradient Boosting performs best:
   Model	RMSE	MAE	R²	CV RMSE
@@ -122,7 +122,7 @@ and limited, consistent with the weak per-book sentiment–rating correlation (r
 
   Gradient Boosting achieved the best overall performance with the lowest hold-out RMSE (0.220) and the highest R² (0.273). Therefore, it was selected as the final production model and saved as rating_model.joblib.
 
-- Error patterns and likely causes: largest residuals can be inspected in reports/worst_predictions.csv. The largest prediction errors occur mainly for niche books with few ratings and for books whose popularity or reception is not fully captured by the available metadata. The relatively narrow Goodreads rating distribution also limits the achievable R². Among the features, num_pages is the strongest single correlate of average_rating (r = 0.24), while ratings_count and text_reviews_count are nearly collinear (r = 0.94), so they add little independent signal.
+- Error patterns and likely causes: largest residuals can be inspected in [`reports/worst_predictions.csv`](https://github.com/ls00X/ai-book-librarian/blob/main/reports/worst_predictions.csv). The largest prediction errors occur mainly for niche books with few ratings and for books whose popularity or reception is not fully captured by the available metadata. The relatively narrow Goodreads rating distribution also limits the achievable R². Among the features, num_pages is the strongest single correlate of average_rating (r = 0.24), while ratings_count and text_reviews_count are nearly collinear (r = 0.94), so they add little independent signal.
 
 
 #### 2A.6 Integration with Other Block(s)
@@ -142,8 +142,8 @@ and limited, consistent with the weak per-book sentiment–rating correlation (r
 
 #### 2B.2 Preprocessing and Prompt Design
 
-- Text preprocessing: build a per-book document title + genres + description (_doc() in src/embeddings.py); review text truncated to 1000 chars before VADER (src/sentiment.py). The review→book sentiment join is on book_id (not on title), since reviews and metadata share the dataset's native id.
-- Prompt design or retrieval setup: dense embeddings with `all-MiniLM-L6-v2`, cosine similarity, top-`CANDIDATE_POOL` then re-rank. Two LLM prompt variants (`concise`, `structured`) grounded in retrieved book data — `PROMPT_VARIANTS` in `src/explain.py`.
+- Text preprocessing: build a per-book document title + genres + description ([`_doc()` in `src/embeddings.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/embeddings.py#L19-L21)); review text truncated to 1000 chars before VADER ([`src/sentiment.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/sentiment.py#L42-L45)). The review→book sentiment join is on book_id (not on title), since reviews and metadata share the dataset's native id.
+- Prompt design or retrieval setup: dense embeddings with `all-MiniLM-L6-v2`, cosine similarity, top-`CANDIDATE_POOL` then re-rank. Two LLM prompt variants (`concise` (https://github.com/ls00X/ai-book-librarian/blob/main/src/explain.py#L15-L20), `structured` (https://github.com/ls00X/ai-book-librarian/blob/main/src/explain.py#L21-L28)) grounded in retrieved book data — [`PROMPT_VARIANTS` in `src/explain.py`](https://github.com/ls00X/ai-book-librarian/blob/main/src/explain.py#L14-L30).
 
 #### 2B.3 Approach Selection
 
