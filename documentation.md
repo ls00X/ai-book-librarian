@@ -2,8 +2,8 @@
 
 ## Documentation Hint
 
-References point to the function or section in the code rather than a fixed line, so they stay
-valid as the code evolves.
+Code references link directly to the relevant function and line range on GitHub
+(e.g. [`train.py` `main()`](https://github.com/ls00X/ai-book-librarian/blob/main/src/train.py#L71-L143)), so reviewers can jump straight to the implementation.
 
 ## Project Metadata
 
